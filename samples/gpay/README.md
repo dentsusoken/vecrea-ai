@@ -60,13 +60,25 @@ DevContainers にて環境構築をしています。
 
 ```
 gpay/
+├── .devcontainer/       # DevContainers 用設定
+│   ├── devcontainer.json
+│   ├── docker-compose.yml
+│   ├── .env_sample       # 環境変数の雛形
+│   └── setup.sh
 ├── src/
-│   ├── index.ts      # エントリーポイント
-│   ├── front/        # GPay のテンプレート
-│   ├── types/        # 型定義
-│   └── utils/        # ユーティリティ
+│   ├── index.ts         # エントリーポイント
+│   ├── front/           # GPay 用フロント
+│   │   ├── index.html
+│   │   └── main.ts
+│   ├── types/           # 型定義
+│   │   ├── payment.ts
+│   │   └── state.ts
+│   └── utils/           # Stripe 連携・状態管理
+│       ├── stripe.ts
+│       └── state.ts
+├── .env                 # 環境変数（ローカル用・要自動作成）
 ├── package.json
 ├── tsconfig.json
-├── eslint.config.js
-└── .prettierrc.json
+├── tsconfig.front.json  # フロント用 TS ビルド設定
+└── README.md
 ```
