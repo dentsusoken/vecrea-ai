@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc && tsc -p tsconfig.front.json",
-    "start": "node dist/index.js",
-    "dev": "tsc -p tsconfig.front.json && tsx watch src/index.ts",
+    "start": "node --env-file=.devcontainer/.env dist/index.js",
+    "dev": "tsc -p tsconfig.front.json && tsx watch --env-file=.devcontainer/.env src/index.ts",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.front.json --noEmit"
   },
   "devDependencies": {
