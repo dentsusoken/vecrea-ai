@@ -1,0 +1,41 @@
+# Source and development files
+*.ts
+!*.d.ts
+__tests__/
+*.spec.ts
+*.test.ts
+*.spec.js
+*.test.js
+
+# Python (not published to npm)
+*.py
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Git and CI
+.git/
+.github/
+.gitignore
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Documentation and examples (exclude if not needed in package)
+docs/
+examples/
+samples/
+
+# Build config (keep if needed for consumers)
+.eslintrc*
+.prettierrc*
+tsconfig.json
+
+# Test and coverage
+coverage/
+.nyc_output/
+*.log
