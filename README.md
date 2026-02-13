@@ -1,6 +1,6 @@
 # vecrea-ai
 
-A repository collecting AI-related samples and projects for VeCrea. Written in TypeScript and Python.
+A repository collecting AI-related samples and projects for VeCrea.
 
 ## Structure
 
