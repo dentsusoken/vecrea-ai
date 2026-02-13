@@ -1,0 +1,31 @@
+version: "3.9"
+
+services:
+  gpay-sample:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        http_proxy: ${http_proxy}
+        HTTP_PROXY: ${HTTP_PROXY}
+        https_proxy: ${https_proxy}
+        HTTPS_PROXY: ${HTTPS_PROXY}
+        no_proxy: ${no_proxy}
+        NO_PROXY: ${NO_PROXY}
+    volumes:
+      - ../../:/workspace
+    ports:
+      - 3000:3000
+    env_file:
+      - .env
+    environment:
+      - PATH=/workspace/gpay/bin:$PATH
+      - PYTHON=/usr/bin/python3
+
+      - http_proxy
+      - HTTP_PROXY
+      - https_proxy
+      - HTTPS_PROXY
+      - no_proxy
+      - NO_PROXY
+    command: sleep infinity

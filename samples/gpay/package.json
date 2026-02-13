@@ -1,0 +1,23 @@
+{
+  "name": "gpay",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc && tsc -p tsconfig.front.json",
+    "start": "node dist/index.js",
+    "dev": "tsc -p tsconfig.front.json && tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.front.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/googlepay": "^0.7.6",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.6",
+    "hono": "^4.11.4",
+    "stripe": "^20.3.1"
+  }
+}
