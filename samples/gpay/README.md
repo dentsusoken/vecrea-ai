@@ -7,6 +7,10 @@ DevContainers にて環境構築をしています。
 
 ### 環境変数の登録
 
+0. 各種アカウント作成をする
+    以下のアカウントを作成して下さい
+    - Stripe
+    - Google
 1. 環境変数を登録するためのファイルを作成する
     .devcontainer/.env_sample をコピーし、.devcontainer/.env を作成する
 2. Stripe のシークレットキーとサインシークレットを.env に追加する
