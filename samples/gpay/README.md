@@ -3,15 +3,49 @@
 GPay 支払いトークンを用いたStripe 決済のサンプル。
 DevContainers にて環境構築をしています。
 
-## 環境変数
+## 事前準備
 
-`.devcontainer/.env_sample` をコピーして `.devcontainer/.env` を作成し、以下の内容にて環境変数を設定して下さい
-- STRIPE_API_KEY: https://dashboard.stripe.com/ からシークレットキーを取得
-- STRIPE_SIGNING_SECRET: STRIPE_API_KEY を設定した後、DevContainers を起動し、`get_signing_secret`をコンソールから実行した結果
+### 環境変数の登録
 
-## セットアップ
+1. 環境変数を登録するためのファイルを作成する
+    .devcontainer/.env_sample をコピーし、.devcontainer/.env を作成する
+2. Stripe のシークレットキーとサインシークレットを.env に追加する
+    1 で作成した.env ファイルに、下記のように環境変数を追加してください。
 
-環境変数の設定後にDevContainers にてこのリポジトリを開いて下さい。
+    - `STRIPE_API_KEY`: [Stripe のシークレットキーを取得する](#stripe-のシークレットキーを取得する) を参照
+    - `STRIPE_SIGNING_SECRET`: [サインシークレットを取得する](#サインシークレットを取得する) を参照
+3. `npm install` にてパッケージインストールする
+    - Dev Containers にて起動させる場合は不要です。
+
+#### Stripe のシークレットキーを取得する
+
+1. https://dashboard.stripe.com/ にアクセスし、ダッシュボード右側に表示されているシークレットキーをSTRIPE_API_KEY に設定する
+
+#### サインシークレットを取得する
+
+1. 以下のコマンドを実行して出力された結果をSTRIPE_SIGNING_SECRET に設定する
+    ```bash
+    stripe listen --api-key ${STRIPE_API_KEY} --print-secret
+    ```
+
+## 実行方法
+
+1. `npm run dev`にてサーバーを起動する
+2. 新しいターミナルから以下のコマンドを実行し、Stripe のイベントをローカルに取得できるようにする
+
+    ```bash
+    stripe listen --forward-to http://localhost:3000/webhooks/stripe --api-key ${STRIPE_API_KEY}
+    ```
+
+3. `http://localhost:3000/`にアクセスする
+4. `GPay で支払う`をクリックする
+5. 表示されたダイアログの`お支払い`をクリック
+6. 最終行内に`"value":"payment_intent.succeeded`が表示されればOK
+
+## 環境変数について
+
+- STRIPE_API_KEY: Stripe のAPI 秘密鍵
+- STRIPE_SIGNING_SECRET: Stripe のWebhook イベントの署名検証を行う秘密鍵
 
 ## スクリプト
 
@@ -36,12 +70,3 @@ gpay/
 ├── eslint.config.js
 └── .prettierrc.json
 ```
-
-## 使用方法
-
-1. `npm run dev`にてサーバーを起動する
-2. ターミナルを新しく作成し、`./bin/listen_server`を実行してWebhook イベントをローカルに転送できるようにする
-3. `http://localhost:3000/`にアクセスする
-4. `GPay で支払う`をクリックする
-5. 表示されたダイアログの`お支払い`をクリック
-6. `"value":"payment_intent.succeeded`が表示されればOK
