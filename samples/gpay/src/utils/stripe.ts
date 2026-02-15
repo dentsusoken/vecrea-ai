@@ -20,7 +20,7 @@ export async function payment(c: Context) {
     type: 'card',
     card: {
       token: payment_token,
-    }
+    },
   });
 
   // 決済の実行
@@ -29,14 +29,14 @@ export async function payment(c: Context) {
     currency: currency,
     payment_method: paymentMethod.id,
     confirm: true,
-    automatic_payment_methods: {
-      enabled: true,
-      allow_redirects: 'never',
-    }
+    // automatic_payment_methods: {
+    //   enabled: true,
+    //   allow_redirects: 'never',
+    // }
   });
 
   // 作成したpayment intents を返す
-  return c.json(paymentIntents)
+  return c.json(paymentIntents);
 }
 
 export async function webhooks(c: Context) {
@@ -46,15 +46,19 @@ export async function webhooks(c: Context) {
   const payload = await c.req.raw.text();
 
   // 2) Stripe-Signature ヘッダー取得
-  const sig = c.req.header("stripe-signature");
+  const sig = c.req.header('stripe-signature');
   if (!sig) {
-    return c.text("Missing Stripe-Signature header", 400);
+    return c.text('Missing Stripe-Signature header', 400);
   }
 
   // 3) 署名検証してイベント復元
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(payload, sig, process.env.STRIPE_SIGNING_SECRET ?? '');
+    event = stripe.webhooks.constructEvent(
+      payload,
+      sig,
+      process.env.STRIPE_SIGNING_SECRET ?? '',
+    );
   } catch (err: any) {
     // 署名が合わない/改ざんなど
     return c.text(`Webhook Error: ${err.message}`, 400);
@@ -62,29 +66,32 @@ export async function webhooks(c: Context) {
 
   // 4) イベント種別ごとに処理
   switch (event.type) {
-
-    case "payment_intent.succeeded": {
+    case 'payment_intent.succeeded': {
       const pi = event.data.object as Stripe.PaymentIntent;
 
       // 例: 注文確定・権限付与・配送開始など
       // pi.id, pi.amount, pi.currency, pi.metadata などを使える
-      console.log("✅ PaymentIntent succeeded:", pi.id);
+      console.log('✅ PaymentIntent succeeded:', pi.id);
 
       setResult(event.type);
 
       break;
     }
 
-    case "payment_intent.payment_failed": {
+    case 'payment_intent.payment_failed': {
       const pi = event.data.object as Stripe.PaymentIntent;
-      console.log("❌ PaymentIntent failed:", pi.id, pi.last_payment_error?.message);
+      console.log(
+        '❌ PaymentIntent failed:',
+        pi.id,
+        pi.last_payment_error?.message,
+      );
 
       // 例: 支払い失敗通知・再試行導線など
       break;
     }
 
     default:
-      console.log("Unhandled event type:", event.type);
+      console.log('Unhandled event type:', event.type);
   }
 
   // 5) Stripe には早めに 2xx を返す（重い処理はキュー推奨）
@@ -98,7 +105,7 @@ export function sse(c: Context) {
     let aborted = false;
     stream.onAbort(() => {
       aborted = true;
-      console.log("SSE aborted");
+      console.log('SSE aborted');
     });
 
     // 最後に送った version を覚えておく
@@ -109,19 +116,19 @@ export function sse(c: Context) {
 
     // 接続直後に1回送る（JSONで統一するとフロントが楽）
     await stream.writeSSE({
-      event: "message",
-      data: JSON.stringify({ status: "connected" }),
-      id: "0",
+      event: 'message',
+      data: JSON.stringify({ status: 'connected' }),
+      id: '0',
     });
 
     while (!aborted) {
       // 共有ストアの変化を監視
       if (resultState.version !== lastVersion) {
-        console.log(resultState)
+        console.log(resultState);
         lastVersion = resultState.version;
 
         await stream.writeSSE({
-          event: "message",
+          event: 'message',
           data: JSON.stringify({
             value: resultState.value,
             updatedAt: resultState.updatedAt,

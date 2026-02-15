@@ -1,0 +1,21 @@
+{
+  "name": "programmatic-wallet",
+  "version": "1.0.0",
+  "description": "A Wallet implementation designed for AI Agent operation. Supports CLI, AI Agents (SKILL.md), and Vercel AI SDK.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cli": "tsx src/cli.ts",
+    "run": "tsx"
+  },
+  "dependencies": {
+    "@coinbase/cdp-core": "^0.0.85",
+    "localstorage-polyfill": "^1.0.1",
+    "viem": "^2.33.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "dotenv": "^16.4.5",
+    "typescript": "^5.6.0"
+  }
+}
