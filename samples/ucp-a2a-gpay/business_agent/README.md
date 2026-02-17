@@ -26,8 +26,13 @@ Example agent implementing A2A Extension for UCP
 
 ## Quick Start
 
-1. Run `uv sync` (ucp-sdk is installed automatically from GitHub)
-2. Update the env.example file with your Gemini API key and rename it to .env
-3. Run `uv run business_agent`
-4. This starts the business agent on port 10999. You can verify by accessing
+1. Clone the Vecrea AI repository.
+   `git clone https://github.com/dentsusoken/vecrea-ai`
+2. `cd vecrea-ai/samples/ucp-a2a-gpay/business_agent`
+3. Run `uv sync`
+4. Update the env.example file with your Gemini API key and rename it to .env
+   . Run `uv run business_agent`
+5. This starts the business agent on port 10999. You can verify by accessing
    the agent card at http://localhost:10999/.well-known/agent-card.json
+6. The business agent's UCP Profile can be found at
+   http://localhost:10999/.well-known/ucp

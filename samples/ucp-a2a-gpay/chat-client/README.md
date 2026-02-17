@@ -16,9 +16,15 @@
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
+**Prerequisites:** Node.js
 
-1. Install dependencies:
+From the `samples/ucp-a2a-gpay` directory:
+
+1. Move to the chat-client directory.
+   `cd chat-client`
+2. Install dependencies:
    `npm install`
-2. Run the app:
+3. Run the app:
    `npm run dev`
+4. The Chat Client UCP Profile can be found at
+   http://localhost:3000/profile/agent-profile.json
