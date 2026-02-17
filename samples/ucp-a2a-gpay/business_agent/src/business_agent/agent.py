@@ -325,12 +325,13 @@ async def complete_checkout(tool_context: ToolContext) -> dict:
 
 
 def start_payment(tool_context: ToolContext) -> dict:
-  """Asks for required information to proceed with the payment.
+  """Starts the payment process. When customer details are needed, returns a
+  message asking the user to select a payment method (e.g. Google Pay).
 
   Args: None
 
   Returns:
-      dict: checkout object
+      dict: checkout object or requires_more_info with message
   """
   checkout_id = _get_current_checkout_id(tool_context)
 
@@ -365,9 +366,14 @@ def after_tool_modifier(
   extensions = tool_context.state.get(ADK_EXTENSIONS_STATE_KEY, [])
   # add typed data responses to the state
   ucp_response_keys = [UCP_CHECKOUT_KEY, "a2a.product_results"]
-  if UcpExtension.URI in extensions and any(
+  has_ucp_response = any(
       key in tool_response for key in ucp_response_keys
-  ):
+  )
+  has_requires_more_info = (
+      tool_response.get("status") == "requires_more_info"
+      and "message" in tool_response
+  )
+  if UcpExtension.URI in extensions and (has_ucp_response or has_requires_more_info):
     tool_context.state[ADK_LATEST_TOOL_RESULT] = tool_response
 
   return None
@@ -416,8 +422,8 @@ root_agent = Agent(
         " address_region, postal_code, address_country), invoke"
         " update_customer_details with those parameters. When the"
         " start_payment tool indicates that customer details are required,"
-        " ask for them and always end your response with these two options"
-        " on separate lines: 1. Automatic and 2. Manual."
+        " relay the message to the user. The client will show payment method"
+        " selection (e.g. Google Pay) to collect email and shipping address."
     ),
     tools=[
         search_shopping_catalog,

@@ -64,23 +64,6 @@ function App() {
     });
   };
 
-  const handleAutoFillCustomerDetails = () => {
-    const actionPayload = JSON.stringify({
-      action: 'update_customer_details',
-      email: 'john@gmail.com',
-      first_name: 'John',
-      last_name: 'Doe',
-      street_address: '123 Main street',
-      address_locality: 'Los Angeles',
-      address_region: 'CA',
-      postal_code: '90001',
-      address_country: 'US',
-    });
-    handleSendMessage(actionPayload, {
-      isUserAction: true,
-    });
-  };
-
   const handlePaymentMethodSelection = async (checkout: any) => {
     if (!checkout || !checkout.payment || !checkout.payment.handlers) {
       const errorMessage: ChatMessage = {
@@ -171,10 +154,28 @@ function App() {
     }
   };
 
-  const handleGooglePayComplete = (data: {
+  const parseNameToFirstLast = (name: string): {first_name: string; last_name: string} => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    const first_name = parts[0] ?? '';
+    const last_name = parts.slice(1).join(' ') ?? '';
+    return {first_name, last_name};
+  };
+
+  const handleGooglePayComplete = async (data: {
     token: string;
     last_digits?: string;
     brand?: string;
+    email?: string;
+    shippingAddress?: {
+      name?: string;
+      address1?: string;
+      address2?: string;
+      address3?: string;
+      locality?: string;
+      administrativeArea?: string;
+      postalCode?: string;
+      countryCode?: string;
+    };
   }) => {
     setMessages((prev) => prev.filter((msg) => !msg.paymentMethods));
 
@@ -196,6 +197,27 @@ function App() {
       handler_name: credentialProvider.current.handler_name,
       credential: {type: 'token', token: data.token},
     };
+
+    if (data.email || data.shippingAddress) {
+      const addr = data.shippingAddress;
+      const {first_name, last_name} = addr?.name
+        ? parseNameToFirstLast(addr.name)
+        : {first_name: 'Guest', last_name: ''};
+
+      const actionPayload = JSON.stringify({
+        action: 'update_customer_details',
+        email: data.email ?? '',
+        first_name: first_name || 'Guest',
+        last_name,
+        street_address: addr?.address1 ?? '',
+        extended_address: [addr?.address2, addr?.address3].filter(Boolean).join(', ') || undefined,
+        address_locality: addr?.locality ?? '',
+        address_region: addr?.administrativeArea ?? '',
+        postal_code: addr?.postalCode ?? '',
+        address_country: addr?.countryCode ?? 'US',
+      });
+      await handleSendMessage(actionPayload, {isUserAction: true});
+    }
 
     const paymentInstrumentMessage: ChatMessage = {
       sender: Sender.MODEL,
@@ -339,9 +361,13 @@ function App() {
         sender: Sender.MODEL,
         text: '',
       };
+      let requiresMoreInfo = false;
 
       const responseParts =
-        data.result?.parts || data.result?.status?.message?.parts || [];
+        data.result?.parts ||
+        data.result?.status?.message?.parts ||
+        data.result?.artifacts?.[0]?.parts ||
+        [];
 
       for (const part of responseParts) {
         if (part.text) {
@@ -358,23 +384,72 @@ function App() {
         } else if (part.data?.['a2a.ucp.checkout']) {
           // Checkout
           combinedBotMessage.checkout = part.data['a2a.ucp.checkout'];
-        } else if (
-          part.data?.status === 'requires_more_info' &&
-          part.data?.message
-        ) {
-          combinedBotMessage.text +=
-            (combinedBotMessage.text ? '\n' : '') + part.data.message;
+        } else if (part.data?.status === 'requires_more_info') {
+          requiresMoreInfo = true;
+        }
+      }
+
+      // Handle requires_more_info: show payment method OR customer details
+      const checkoutForPayment =
+        combinedBotMessage.checkout ?? lastCheckout;
+      if (requiresMoreInfo && checkoutForPayment) {
+        const hasPaymentMethod =
+          (checkoutForPayment.payment?.instruments?.length ?? 0) > 0 ||
+          !!checkoutForPayment.payment?.selected_instrument_id;
+        const hasCustomerDetails =
+          !!checkoutForPayment.buyer && !!checkoutForPayment.fulfillment;
+
+        if (!hasPaymentMethod && checkoutForPayment.payment?.handlers) {
+          // No payment method selected → show select payment method only (no checkout)
+          try {
+            const handler = checkoutForPayment.payment.handlers.find(
+              (h: any) => h.id === 'example_payment_provider',
+            );
+            if (handler) {
+              const paymentResponse =
+                await credentialProvider.current.getSupportedPaymentMethods(
+                  user_email ?? '',
+                  handler.config,
+                );
+              combinedBotMessage.paymentMethods =
+                paymentResponse.payment_method_aliases;
+            }
+          } catch (err) {
+            console.error('Failed to fetch payment methods:', err);
+          }
+        } else if (hasPaymentMethod && !hasCustomerDetails) {
+          // Payment method selected but no customer details → manual input
+          combinedBotMessage.checkout = checkoutForPayment;
           combinedBotMessage.customerDetailOptions = true;
         }
       }
 
-      // Show Automatic/Manual buttons when agent asks for customer details
+      // Show payment method selection when checkout is ready_for_complete
       if (
-        combinedBotMessage.text &&
-        combinedBotMessage.text.includes('1. Automatic') &&
-        combinedBotMessage.text.includes('2. Manual')
+        checkoutForPayment?.status === 'ready_for_complete' &&
+        checkoutForPayment?.payment?.handlers
       ) {
-        combinedBotMessage.customerDetailOptions = true;
+        if (!combinedBotMessage.checkout) {
+          combinedBotMessage.checkout = checkoutForPayment;
+        }
+        if (!combinedBotMessage.paymentMethods) {
+          try {
+            const handler = checkoutForPayment.payment.handlers.find(
+              (h: any) => h.id === 'example_payment_provider',
+            );
+            if (handler) {
+              const paymentResponse =
+                await credentialProvider.current.getSupportedPaymentMethods(
+                  user_email ?? '',
+                  handler.config,
+                );
+              combinedBotMessage.paymentMethods =
+                paymentResponse.payment_method_aliases;
+            }
+          } catch (err) {
+            console.error('Failed to fetch payment methods:', err);
+          }
+        }
       }
 
       const newMessages: ChatMessage[] = [];
@@ -382,7 +457,8 @@ function App() {
         combinedBotMessage.text ||
         combinedBotMessage.products ||
         combinedBotMessage.checkout ||
-        combinedBotMessage.customerDetailOptions;
+        combinedBotMessage.customerDetailOptions ||
+        (combinedBotMessage.paymentMethods?.length ?? 0) > 0;
       if (hasContent) {
         newMessages.push(combinedBotMessage);
       }
@@ -390,6 +466,13 @@ function App() {
       if (newMessages.length > 0) {
         setMessages((prev) => [...prev.slice(0, -1), ...newMessages]);
       } else {
+        console.warn(
+          '[App] Unparseable response - no content extracted.',
+          '\ndata.result:',
+          JSON.stringify(data.result, null, 2),
+          '\nresponseParts length:',
+          responseParts.length,
+        );
         const fallbackResponse =
           "Sorry, I received a response I couldn't understand.";
         setMessages((prev) => [
@@ -414,21 +497,7 @@ function App() {
   const lastCheckout =
     lastCheckoutIndex >= 0 ? messages[lastCheckoutIndex].checkout : null;
 
-  const lastModelMessage = [...messages]
-    .reverse()
-    .find((m) => m.sender === Sender.MODEL);
-
   const handleSendMessageWithShortcuts = (messageContent: string | any[]) => {
-    if (typeof messageContent === 'string') {
-      const trimmed = messageContent.trim();
-      if (
-        (trimmed === '1' || trimmed === '1.') &&
-        lastModelMessage?.customerDetailOptions
-      ) {
-        handleAutoFillCustomerDetails();
-        return;
-      }
-    }
     handleSendMessage(messageContent);
   };
 
@@ -448,15 +517,12 @@ function App() {
                 ? handleStartPayment
                 : undefined
             }
-            onAutoFillCustomerDetails={
-              msg.customerDetailOptions ? handleAutoFillCustomerDetails : undefined
-            }
             onSelectPaymentMethod={handlePaymentMethodSelected}
             onGooglePayComplete={handleGooglePayComplete}
             lastCheckout={lastCheckout}
             onConfirmPayment={handleConfirmPayment}
             onCompletePayment={
-              msg.checkout?.status === 'ready_for_complete'
+              msg.checkout?.status === 'ready_for_complete' && !msg.paymentMethods
                 ? handlePaymentMethodSelection
                 : undefined
             }

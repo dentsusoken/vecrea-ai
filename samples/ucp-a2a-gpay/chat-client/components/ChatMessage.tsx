@@ -23,18 +23,23 @@ import {
   Sender,
 } from '../types';
 import CheckoutComponent from './Checkout';
-import PaymentConfirmationComponent from './PaymentConfirmation';
 import PaymentMethodSelector from './PaymentMethodSelector';
 import ProductCard from './ProductCard';
 import UserLogo from './UserLogo';
 
 interface ChatMessageProps {
+  key?: React.Key;
   message: ChatMessage;
   onAddToCart?: (product: Product) => Promise<void> | void;
   onCheckout?: () => void;
-  onAutoFillCustomerDetails?: () => void;
   onSelectPaymentMethod?: (selectedMethod: string) => void;
-  onGooglePayComplete?: (token: string) => void;
+  onGooglePayComplete?: (data: {
+    token: string;
+    last_digits?: string;
+    brand?: string;
+    email?: string;
+    shippingAddress?: Record<string, string | undefined>;
+  }) => void;
   onConfirmPayment?: (paymentInstrument: PaymentInstrument) => void;
   onCompletePayment?: (checkout: Checkout) => void;
   isLastCheckout?: boolean;
@@ -65,7 +70,6 @@ function ChatMessageComponent({
   message,
   onAddToCart,
   onCheckout,
-  onAutoFillCustomerDetails,
   onSelectPaymentMethod,
   onGooglePayComplete,
   onConfirmPayment,
@@ -126,28 +130,18 @@ function ChatMessageComponent({
           />
         )}
 
-        {message.paymentInstrument && onConfirmPayment && (
-          <PaymentConfirmationComponent
+        {message.paymentInstrument && onConfirmPayment && lastCheckout && (
+          <CheckoutComponent
+            checkout={lastCheckout}
             paymentInstrument={message.paymentInstrument}
-            onConfirm={() => onConfirmPayment(message.paymentInstrument!)}
+            onConfirmPayment={onConfirmPayment}
           />
         )}
 
-        {message.customerDetailOptions && onAutoFillCustomerDetails && (
-          <div className="mt-2 flex flex-col sm:flex-row gap-2">
-            <button
-              onClick={onAutoFillCustomerDetails}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm">
-              <span className="block">1. Automatic</span>
-              <span className="block text-xs font-normal opacity-90">
-                john@gmail.com, John Doe, 123 Main street, Los Angeles, CA, US,
-                90001
-              </span>
-            </button>
-            <span className="self-center text-sm text-gray-600 py-2">
-              2. Manual (type in chat)
-            </span>
-          </div>
+        {message.customerDetailOptions && (
+          <p className="mt-2 text-sm text-gray-600">
+            Please type your email and shipping address in the chat.
+          </p>
         )}
 
         {message.products && message.products.length > 0 && (
@@ -164,13 +158,15 @@ function ChatMessageComponent({
           </div>
         )}
 
-        {message.checkout && (
-          <CheckoutComponent
-            checkout={message.checkout}
-            onCheckout={isLastCheckout ? onCheckout : undefined}
-            onCompletePayment={isLastCheckout ? onCompletePayment : undefined}
-          />
-        )}
+        {message.checkout &&
+          !message.paymentMethods &&
+          !message.paymentInstrument && (
+            <CheckoutComponent
+              checkout={message.checkout}
+              onCheckout={isLastCheckout ? onCheckout : undefined}
+              onCompletePayment={isLastCheckout ? onCompletePayment : undefined}
+            />
+          )}
       </div>
     </div>
   );

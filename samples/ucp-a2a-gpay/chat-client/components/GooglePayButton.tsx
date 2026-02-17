@@ -53,10 +53,23 @@ const baseGooglePayRequest = {
   merchantInfo,
 };
 
+export interface GooglePayAddress {
+  name?: string;
+  address1?: string;
+  address2?: string;
+  address3?: string;
+  locality?: string;
+  administrativeArea?: string;
+  postalCode?: string;
+  countryCode?: string;
+}
+
 export interface GooglePayPaymentData {
   token: string;
   last_digits?: string;
   brand?: string;
+  email?: string;
+  shippingAddress?: GooglePayAddress;
 }
 
 interface GooglePayButtonProps {
@@ -134,17 +147,37 @@ const GooglePayButton: React.FC<GooglePayButtonProps> = ({
           totalPriceStatus: 'FINAL' as const,
           totalPrice: totalAmount,
         },
+        emailRequired: true,
+        shippingAddressRequired: true,
+        shippingAddressParameters: {
+          allowedCountryCodes: [countryCode],
+        },
       } as unknown as google.payments.api.PaymentDataRequest;
 
       const res = await client.loadPaymentData(req);
       const token =
         res.paymentMethodData?.tokenizationData?.token ?? '';
       const info = res.paymentMethodData?.info;
+      const shippingAddress = res.shippingAddress
+        ? {
+            name: res.shippingAddress.name,
+            address1: res.shippingAddress.address1,
+            address2: res.shippingAddress.address2,
+            address3: res.shippingAddress.address3,
+            locality: res.shippingAddress.locality,
+            administrativeArea: res.shippingAddress.administrativeArea,
+            postalCode: res.shippingAddress.postalCode,
+            countryCode: res.shippingAddress.countryCode,
+          }
+        : undefined;
+
       if (token) {
         onToken({
           token,
           last_digits: info?.cardDetails,
           brand: info?.cardNetwork?.toLowerCase(),
+          email: res.email,
+          shippingAddress,
         });
       }
     } catch (err) {

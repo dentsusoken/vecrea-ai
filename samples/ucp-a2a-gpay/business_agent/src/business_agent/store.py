@@ -258,7 +258,7 @@ class RetailStore:
     checkout = self.get_checkout(checkout_id)
 
     if checkout is None:
-      raise ValueError(f"Checkout with ID {checkout} not found")
+      raise ValueError(f"Checkout with ID {checkout_id} not found")
 
     for line_item in checkout.line_items:
       if line_item.item.id == product_id:
@@ -424,21 +424,13 @@ class RetailStore:
     if checkout.status == "ready_for_complete":
       return checkout
 
-    messages = []
-    if checkout.buyer is None:
-      messages.append("Provide a buyer email address")
-
-    if (
+    # When customer details are missing, ask user to select payment method.
+    # GPay will collect email and shipping address when selected.
+    if checkout.buyer is None or (
         isinstance(checkout, FulfillmentCheckout)
         and checkout.fulfillment is None
     ):
-      messages.append("Provide a fulfillment address")
-
-    if messages:
-      return (
-          "\n".join(messages)
-          + "\n\n1. Automatic\n2. Manual"
-      )
+      return "To proceed with the payment, please select a payment method first."
 
     self._recalculate_checkout(checkout)
     checkout.status = "ready_for_complete"
