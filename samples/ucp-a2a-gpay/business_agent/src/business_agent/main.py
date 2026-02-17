@@ -43,62 +43,64 @@ logger.addHandler(logging.StreamHandler())
 
 
 def make_sync(func):
-  @functools.wraps(func)
-  def wrapper(*args, **kwargs):
-    return asyncio.run(func(*args, **kwargs))
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return asyncio.run(func(*args, **kwargs))
 
-  return wrapper
+    return wrapper
 
 
 @click.command()
 @click.option("--host", default="localhost")
 @click.option("--port", default=10999)
 @make_sync
-async def run(host, port):  
-  if not os.getenv("GOOGLE_API_KEY"):
-    logger.error("GOOGLE_API_KEY must be set")
-    exit(1)
+async def run(host, port):
+    if not os.getenv("GOOGLE_API_KEY"):
+        logger.error("GOOGLE_API_KEY must be set")
+        exit(1)
 
-  card_path = os.path.join(os.path.dirname(__file__), "data/agent_card.json")
-  with open(card_path, "r", encoding="utf-8") as f:
-    data = json.load(f)
-  agent_card = AgentCard.model_validate(data)
+    card_path = os.path.join(os.path.dirname(__file__), "data/agent_card.json")
+    with open(card_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    agent_card = AgentCard.model_validate(data)
 
-  task_store = InMemoryTaskStore()
+    task_store = InMemoryTaskStore()
 
-  request_handler = DefaultRequestHandler(
-      agent_executor=ADKAgentExecutor(
-          agent=business_agent,
-          extensions=agent_card.capabilities.extensions or [],
-      ),
-      task_store=task_store,
-  )
+    request_handler = DefaultRequestHandler(
+        agent_executor=ADKAgentExecutor(
+            agent=business_agent,
+            extensions=agent_card.capabilities.extensions or [],
+        ),
+        task_store=task_store,
+    )
 
-  a2a_app = A2AStarletteApplication(
-      agent_card=agent_card, http_handler=request_handler
-  )
-  routes = a2a_app.routes()
-  routes.extend([
-      Route(
-          "/.well-known/ucp",
-          lambda _: FileResponse(
-              os.path.join(os.path.dirname(__file__), "data/ucp.json")
-          ),
-      ),
-      Mount(
-          "/images",
-          app=StaticFiles(
-              directory=os.path.join(os.path.dirname(__file__), "data/images")
-          ),
-          name="images",
-      ),
-  ])
-  app = Starlette(routes=routes)
+    a2a_app = A2AStarletteApplication(
+        agent_card=agent_card, http_handler=request_handler
+    )
+    routes = a2a_app.routes()
+    routes.extend(
+        [
+            Route(
+                "/.well-known/ucp",
+                lambda _: FileResponse(
+                    os.path.join(os.path.dirname(__file__), "data/ucp.json")
+                ),
+            ),
+            Mount(
+                "/images",
+                app=StaticFiles(
+                    directory=os.path.join(os.path.dirname(__file__), "data/images")
+                ),
+                name="images",
+            ),
+        ]
+    )
+    app = Starlette(routes=routes)
 
-  config = uvicorn.Config(app, host=host, port=port, log_level="info")
-  server = uvicorn.Server(config)
-  await server.serve()
+    config = uvicorn.Config(app, host=host, port=port, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 
 if __name__ == "__main__":
-  run()
+    run()

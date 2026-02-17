@@ -25,4 +25,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-ucp-sdk = { path = "../../../sdk/python/", editable = true }
+ucp-sdk = { git = "https://github.com/Universal-Commerce-Protocol/python-sdk.git" }
