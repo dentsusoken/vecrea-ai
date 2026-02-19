@@ -64,8 +64,8 @@ const validHeaders = {
   'UCP-Agent': 'profile=https://platform.example/profile',
 };
 
-describe('create_checkout リクエストボディの Zod バリデーション', () => {
-  test('有効な body ならバリデーションを通過する', () => {
+describe('create_checkout request body Zod validation', () => {
+  test('valid body passes validation', () => {
     const result = requestSchema.safeParse(validBody);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -73,14 +73,14 @@ describe('create_checkout リクエストボディの Zod バリデーション'
     }
   });
 
-  test('無効な body（必須不足）ならバリデーションに失敗する', () => {
+  test('invalid body (missing required fields) fails validation', () => {
     const result = requestSchema.safeParse({ id: 'only-id' });
     expect(result.success).toBe(false);
   });
 
   test.each([
     {
-      name: 'line_items[].item.price が負の数',
+      name: 'line_items[].item.price is negative',
       body: {
         ...validBody,
         line_items: [
@@ -94,25 +94,25 @@ describe('create_checkout リクエストボディの Zod バリデーション'
       },
     },
     {
-      name: 'status が enum 外',
+      name: 'status is not in enum',
       body: { ...validBody, status: 'invalid_status' },
     },
     {
-      name: 'links[].url が URL 形式でない',
+      name: 'links[].url is not URL format',
       body: {
         ...validBody,
         links: [{ type: 'continue', url: 'not-a-url' }],
       },
     },
     {
-      name: 'ucp.version が日付形式（YYYY-MM-DD）でない',
+      name: 'ucp.version is not date format (YYYY-MM-DD)',
       body: {
         ...validBody,
         ucp: { version: 'invalid', payment_handlers: {} },
       },
     },
     {
-      name: 'line_items[].quantity が 0',
+      name: 'line_items[].quantity is 0',
       body: {
         ...validBody,
         line_items: [
@@ -129,7 +129,7 @@ describe('create_checkout リクエストボディの Zod バリデーション'
       },
     },
     {
-      name: 'totals[].type が enum 外',
+      name: 'totals[].type is not in enum',
       body: {
         ...validBody,
         totals: [
@@ -139,17 +139,17 @@ describe('create_checkout リクエストボディの Zod バリデーション'
       },
     },
     {
-      name: 'currency が number（型違い）',
+      name: 'currency is number (type error)',
       body: { ...validBody, currency: 123 },
     },
-  ])('無効な body（型エラー: $name）ならバリデーションに失敗する', ({ body }) => {
+  ])('invalid body (type error: $name) fails validation', ({ body }) => {
     const result = requestSchema.safeParse(body);
     expect(result.success).toBe(false);
   });
 });
 
-describe('create_checkout レスポンスの Zod バリデーション', () => {
-  test('有効なレスポンスならバリデーションを通過する', () => {
+describe('create_checkout response Zod validation', () => {
+  test('valid response passes validation', () => {
     const result = responseSchema.safeParse(validResponse);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -158,14 +158,14 @@ describe('create_checkout レスポンスの Zod バリデーション', () => {
     }
   });
 
-  test('無効なレスポンス（必須不足）ならバリデーションに失敗する', () => {
+  test('invalid response (missing required fields) fails validation', () => {
     const result = responseSchema.safeParse({ id: 'only-id' });
     expect(result.success).toBe(false);
   });
 
   test.each([
     {
-      name: 'line_items[].item.price が負の数',
+      name: 'line_items[].item.price is negative',
       response: {
         ...validResponse,
         line_items: [
@@ -179,25 +179,25 @@ describe('create_checkout レスポンスの Zod バリデーション', () => {
       },
     },
     {
-      name: 'status が enum 外',
+      name: 'status is not in enum',
       response: { ...validResponse, status: 'invalid_status' },
     },
     {
-      name: 'links[].url が URL 形式でない',
+      name: 'links[].url is not URL format',
       response: {
         ...validResponse,
         links: [{ type: 'continue', url: 'not-a-url' }],
       },
     },
     {
-      name: 'ucp.version が日付形式でない',
+      name: 'ucp.version is not date format',
       response: {
         ...validResponse,
         ucp: { version: 'invalid', payment_handlers: {} },
       },
     },
     {
-      name: 'line_items[].quantity が 0',
+      name: 'line_items[].quantity is 0',
       response: {
         ...validResponse,
         line_items: [
@@ -214,7 +214,7 @@ describe('create_checkout レスポンスの Zod バリデーション', () => {
       },
     },
     {
-      name: 'totals[].amount が負の数',
+      name: 'totals[].amount is negative',
       response: {
         ...validResponse,
         totals: [
@@ -224,7 +224,7 @@ describe('create_checkout レスポンスの Zod バリデーション', () => {
       },
     },
   ])(
-    '無効なレスポンス（型エラー: $name）ならバリデーションに失敗する',
+    'invalid response (type error: $name) fails validation',
     ({ response }) => {
       const result = responseSchema.safeParse(response);
       expect(result.success).toBe(false);
@@ -232,8 +232,8 @@ describe('create_checkout レスポンスの Zod バリデーション', () => {
   );
 });
 
-describe('create_checkout ヘッダーの Zod バリデーション', () => {
-  test('有効なヘッダーならバリデーションを通過する', () => {
+describe('create_checkout header Zod validation', () => {
+  test('valid headers pass validation', () => {
     const result = headersSchema.safeParse(validHeaders);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -244,7 +244,7 @@ describe('create_checkout ヘッダーの Zod バリデーション', () => {
     }
   });
 
-  test('必須ヘッダー不足ならバリデーションに失敗する', () => {
+  test('missing required headers fail validation', () => {
     const result = headersSchema.safeParse({
       'Request-Signature': 'sig',
     });
@@ -253,31 +253,29 @@ describe('create_checkout ヘッダーの Zod バリデーション', () => {
 
   test.each([
     {
-      name: 'Idempotency-Key が UUID 形式でない',
+      name: 'Idempotency-Key is not UUID format',
       headers: { ...validHeaders, 'Idempotency-Key': 'not-a-uuid' },
     },
     {
-      name: 'Request-Id が UUID 形式でない',
+      name: 'Request-Id is not UUID format',
       headers: { ...validHeaders, 'Request-Id': 'not-a-uuid' },
     },
     {
-      name: 'Idempotency-Key が空文字',
+      name: 'Idempotency-Key is empty string',
       headers: { ...validHeaders, 'Idempotency-Key': '' },
     },
     {
-      name: 'Request-Signature が number（型違い）',
+      name: 'Request-Signature is number (type error)',
       headers: { ...validHeaders, 'Request-Signature': 123 },
     },
     {
-      name: 'Idempotency-Key が number（型違い）',
+      name: 'Idempotency-Key is number (type error)',
       headers: {
         ...validHeaders,
         'Idempotency-Key': 123,
       },
     },
-  ])(
-    '無効なヘッダー（型エラー: $name）ならバリデーションに失敗する',
-    ({ headers }) => {
+  ])('invalid headers (type error: $name) fail validation', ({ headers }) => {
       const result = headersSchema.safeParse(headers);
       expect(result.success).toBe(false);
     },
