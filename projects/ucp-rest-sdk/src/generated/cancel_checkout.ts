@@ -1,67 +1,67 @@
-import { makeApi, Zodios, type ZodiosOptions } from "@zodios/core";
-import { z } from "zod";
+import { makeApi, Zodios, type ZodiosOptions } from '@zodios/core';
+import { z } from 'zod';
 
 const endpoints = makeApi([
   {
-    method: "post",
-    path: "/checkout-sessions/:id/cancel",
-    alias: "cancel_checkout",
+    method: 'post',
+    path: '/checkout-sessions/:id/cancel',
+    alias: 'cancel_checkout',
     description: `Cancel a checkout session`,
-    requestFormat: "json",
+    requestFormat: 'json',
     parameters: [
       {
-        name: "id",
-        type: "Path",
+        name: 'id',
+        type: 'Path',
         schema: z.string(),
       },
       {
-        name: "Authorization",
-        type: "Header",
+        name: 'Authorization',
+        type: 'Header',
         schema: z.string().optional(),
       },
       {
-        name: "X-API-Key",
-        type: "Header",
+        name: 'X-API-Key',
+        type: 'Header',
         schema: z.string().optional(),
       },
       {
-        name: "Request-Signature",
-        type: "Header",
+        name: 'Request-Signature',
+        type: 'Header',
         schema: z.string(),
       },
       {
-        name: "Idempotency-Key",
-        type: "Header",
+        name: 'Idempotency-Key',
+        type: 'Header',
         schema: z.string().uuid(),
       },
       {
-        name: "Request-Id",
-        type: "Header",
+        name: 'Request-Id',
+        type: 'Header',
         schema: z.string().uuid(),
       },
       {
-        name: "User-Agent",
-        type: "Header",
+        name: 'User-Agent',
+        type: 'Header',
         schema: z.string().optional(),
       },
       {
-        name: "Content-Type",
-        type: "Header",
+        name: 'Content-Type',
+        type: 'Header',
         schema: z.string().optional(),
       },
       {
-        name: "Accept",
-        type: "Header",
+        name: 'Accept',
+        type: 'Header',
         schema: z.string().optional(),
       },
       {
-        name: "Accept-Language",
-        type: "Header",
+        name: 'Accept-Language',
+        type: 'Header',
         schema: z.string().optional(),
       },
       {
-        name: "Accept-Encoding",
-        type: "Header",
+        name: 'Accept-Encoding',
+        type: 'Header',
         schema: z.string().optional(),
       },
     ],
@@ -85,7 +85,7 @@ const endpoints = makeApi([
                     .and(
                       z
                         .object({
-                          transport: z.enum(["rest", "mcp", "a2a", "embedded"]),
+                          transport: z.enum(['rest', 'mcp', 'a2a', 'embedded']),
                           endpoint: z.string().url().optional(),
                         })
                         .passthrough()
@@ -163,13 +163,13 @@ const endpoints = makeApi([
                 z
                   .object({
                     type: z.enum([
-                      "items_discount",
-                      "subtotal",
-                      "discount",
-                      "fulfillment",
-                      "tax",
-                      "fee",
-                      "total",
+                      'items_discount',
+                      'subtotal',
+                      'discount',
+                      'fulfillment',
+                      'tax',
+                      'fee',
+                      'total',
                     ]),
                     display_text: z.string().optional(),
                     amount: z.number().int().gte(0),
@@ -200,25 +200,25 @@ const endpoints = makeApi([
           .passthrough()
           .optional(),
         status: z.enum([
-          "incomplete",
-          "requires_escalation",
-          "ready_for_complete",
-          "complete_in_progress",
-          "completed",
-          "canceled",
+          'incomplete',
+          'requires_escalation',
+          'ready_for_complete',
+          'complete_in_progress',
+          'completed',
+          'canceled',
         ]),
         currency: z.string(),
         totals: z.array(
           z
             .object({
               type: z.enum([
-                "items_discount",
-                "subtotal",
-                "discount",
-                "fulfillment",
-                "tax",
-                "fee",
-                "total",
+                'items_discount',
+                'subtotal',
+                'discount',
+                'fulfillment',
+                'tax',
+                'fee',
+                'total',
               ]),
               display_text: z.string().optional(),
               amount: z.number().int().gte(0),
@@ -234,14 +234,14 @@ const endpoints = makeApi([
                   code: z.string(),
                   path: z.string().optional(),
                   content_type: z
-                    .enum(["plain", "markdown"])
+                    .enum(['plain', 'markdown'])
                     .optional()
-                    .default("plain"),
+                    .default('plain'),
                   content: z.string(),
                   severity: z.enum([
-                    "recoverable",
-                    "requires_buyer_input",
-                    "requires_buyer_review",
+                    'recoverable',
+                    'requires_buyer_input',
+                    'requires_buyer_review',
                   ]),
                 })
                 .passthrough(),
@@ -252,9 +252,9 @@ const endpoints = makeApi([
                   code: z.string(),
                   content: z.string(),
                   content_type: z
-                    .enum(["plain", "markdown"])
+                    .enum(['plain', 'markdown'])
                     .optional()
-                    .default("plain"),
+                    .default('plain'),
                 })
                 .passthrough(),
               z
@@ -263,9 +263,9 @@ const endpoints = makeApi([
                   path: z.string().optional(),
                   code: z.string().optional(),
                   content_type: z
-                    .enum(["plain", "markdown"])
+                    .enum(['plain', 'markdown'])
                     .optional()
-                    .default("plain"),
+                    .default('plain'),
                   content: z.string(),
                 })
                 .passthrough(),
