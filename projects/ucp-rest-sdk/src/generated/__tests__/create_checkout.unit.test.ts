@@ -1,10 +1,15 @@
 import { describe, expect, test } from 'vitest';
 import { Create_checkoutApi } from '../create_checkout';
-import { getEndpointSchemas, type ZodiosApi } from '../../utils/zodios-schema';
+import {
+  getRequestSchema,
+  getResponseSchema,
+  getHeadersSchema,
+  type ZodiosApi,
+} from '../../utils/zodios-schema';
 
-const { requestSchema, responseSchema, headersSchema } = getEndpointSchemas(
-  Create_checkoutApi as ZodiosApi,
-);
+const requestSchema = getRequestSchema(Create_checkoutApi as ZodiosApi)!;
+const responseSchema = getResponseSchema(Create_checkoutApi as ZodiosApi);
+const headersSchema = getHeadersSchema(Create_checkoutApi as ZodiosApi);
 
 const validBody = {
   ucp: { version: '2026-01-23', payment_handlers: {} },

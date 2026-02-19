@@ -1,55 +1,67 @@
 import type { ZodType } from 'zod';
 import { z } from 'zod';
 
-/** Zodios のエンドポイント定義の型 */
+/** Zodios endpoint definition type */
 export type EndpointDef = {
   parameters: Array<{ name?: string; type: string; schema: unknown }>;
   response?: ZodType;
 };
 
-/** Zodios インスタンスが持つ api の型（getEndpointSchemas に渡す用） */
+/** Zodios instance api type (for passing to schema getters) */
 export type ZodiosApi = { api: EndpointDef[] };
 
-/**
- * Zodios の API 定義から、指定エンドポイントの Request(Body), Response, Header のスキーマを取得する。
- * @param zodiosApi - Create_checkoutApi など Zodios インスタンス（.api を持つ）
- * @param endpointIndex - エンドポイントのインデックス（省略時は 0）
- */
-export function getEndpointSchemas(
-  zodiosApi: ZodiosApi,
-  endpointIndex = 0,
-): {
-  requestSchema: ZodType;
-  responseSchema: ZodType;
-  headersSchema: z.ZodObject<Record<string, ZodType>>;
-} {
-  const api = zodiosApi.api;
-  const endpoint = api[endpointIndex];
+function getEndpoint(zodiosApi: ZodiosApi, endpointIndex: number) {
+  const endpoint = zodiosApi.api[endpointIndex];
   if (!endpoint) {
     throw new Error(`Endpoint at index ${endpointIndex} not found`);
   }
+  return endpoint;
+}
 
+/**
+ * Get request (body) schema for the specified endpoint.
+ * Returns undefined when the endpoint has no Body parameter (e.g. GET, POST with no body).
+ */
+export function getRequestSchema(
+  zodiosApi: ZodiosApi,
+  endpointIndex = 0,
+): ZodType | undefined {
+  const endpoint = getEndpoint(zodiosApi, endpointIndex);
   const bodyParam = endpoint.parameters.find((p) => p.type === 'Body') as
     | { schema: ZodType }
     | undefined;
-  const requestSchema = bodyParam?.schema;
-  if (!requestSchema) {
-    throw new Error(`Endpoint at index ${endpointIndex} has no Body parameter`);
-  }
+  return bodyParam?.schema;
+}
 
+/**
+ * Get response schema for the specified endpoint.
+ */
+export function getResponseSchema(
+  zodiosApi: ZodiosApi,
+  endpointIndex = 0,
+): ZodType {
+  const endpoint = getEndpoint(zodiosApi, endpointIndex);
   const responseSchema = endpoint.response;
   if (!responseSchema) {
     throw new Error(
       `Endpoint at index ${endpointIndex} has no response schema`,
     );
   }
+  return responseSchema;
+}
 
+/**
+ * Get headers schema for the specified endpoint.
+ */
+export function getHeadersSchema(
+  zodiosApi: ZodiosApi,
+  endpointIndex = 0,
+): z.ZodObject<Record<string, ZodType>> {
+  const endpoint = getEndpoint(zodiosApi, endpointIndex);
   const headerParams = endpoint.parameters.filter(
     (p) => p.type === 'Header',
   ) as Array<{ name: string; schema: ZodType }>;
-  const headersSchema = z.object(
+  return z.object(
     Object.fromEntries(headerParams.map((p) => [p.name, p.schema])),
   ) as z.ZodObject<Record<string, ZodType>>;
-
-  return { requestSchema, responseSchema, headersSchema };
 }
