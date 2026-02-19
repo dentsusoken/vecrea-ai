@@ -73,18 +73,72 @@ describe('create_checkout リクエストボディの Zod バリデーション'
     expect(result.success).toBe(false);
   });
 
-  test('無効な body（型エラー）ならバリデーションに失敗する', () => {
-    const result = requestSchema.safeParse({
-      ...validBody,
-      line_items: [
-        {
-          id: 'x',
-          item: { id: 'y', title: 'z', price: -1 },
-          quantity: 1,
-          totals: [],
-        },
-      ],
-    });
+  test.each([
+    {
+      name: 'line_items[].item.price が負の数',
+      body: {
+        ...validBody,
+        line_items: [
+          {
+            id: 'x',
+            item: { id: 'y', title: 'z', price: -1 },
+            quantity: 1,
+            totals: [{ type: 'total' as const, amount: 1000 }],
+          },
+        ],
+      },
+    },
+    {
+      name: 'status が enum 外',
+      body: { ...validBody, status: 'invalid_status' },
+    },
+    {
+      name: 'links[].url が URL 形式でない',
+      body: {
+        ...validBody,
+        links: [{ type: 'continue', url: 'not-a-url' }],
+      },
+    },
+    {
+      name: 'ucp.version が日付形式（YYYY-MM-DD）でない',
+      body: {
+        ...validBody,
+        ucp: { version: 'invalid', payment_handlers: {} },
+      },
+    },
+    {
+      name: 'line_items[].quantity が 0',
+      body: {
+        ...validBody,
+        line_items: [
+          {
+            id: 'line-1',
+            item: { id: 'item-1', title: 'Test', price: 1000 },
+            quantity: 0,
+            totals: [
+              { type: 'subtotal' as const, amount: 1000 },
+              { type: 'total' as const, amount: 1000 },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      name: 'totals[].type が enum 外',
+      body: {
+        ...validBody,
+        totals: [
+          { type: 'subtotal' as const, amount: 1000 },
+          { type: 'invalid_type' as const, amount: 1000 },
+        ],
+      },
+    },
+    {
+      name: 'currency が number（型違い）',
+      body: { ...validBody, currency: 123 },
+    },
+  ])('無効な body（型エラー: $name）ならバリデーションに失敗する', ({ body }) => {
+    const result = requestSchema.safeParse(body);
     expect(result.success).toBe(false);
   });
 });
@@ -104,20 +158,73 @@ describe('create_checkout レスポンスの Zod バリデーション', () => {
     expect(result.success).toBe(false);
   });
 
-  test('無効なレスポンス（型エラー）ならバリデーションに失敗する', () => {
-    const result = responseSchema.safeParse({
-      ...validResponse,
-      line_items: [
-        {
-          id: 'x',
-          item: { id: 'y', title: 'z', price: -1 },
-          quantity: 1,
-          totals: [],
-        },
-      ],
-    });
-    expect(result.success).toBe(false);
-  });
+  test.each([
+    {
+      name: 'line_items[].item.price が負の数',
+      response: {
+        ...validResponse,
+        line_items: [
+          {
+            id: 'x',
+            item: { id: 'y', title: 'z', price: -1 },
+            quantity: 1,
+            totals: [{ type: 'total' as const, amount: 1000 }],
+          },
+        ],
+      },
+    },
+    {
+      name: 'status が enum 外',
+      response: { ...validResponse, status: 'invalid_status' },
+    },
+    {
+      name: 'links[].url が URL 形式でない',
+      response: {
+        ...validResponse,
+        links: [{ type: 'continue', url: 'not-a-url' }],
+      },
+    },
+    {
+      name: 'ucp.version が日付形式でない',
+      response: {
+        ...validResponse,
+        ucp: { version: 'invalid', payment_handlers: {} },
+      },
+    },
+    {
+      name: 'line_items[].quantity が 0',
+      response: {
+        ...validResponse,
+        line_items: [
+          {
+            id: 'line-1',
+            item: { id: 'item-1', title: 'Test', price: 1000 },
+            quantity: 0,
+            totals: [
+              { type: 'subtotal' as const, amount: 1000 },
+              { type: 'total' as const, amount: 1000 },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      name: 'totals[].amount が負の数',
+      response: {
+        ...validResponse,
+        totals: [
+          { type: 'subtotal' as const, amount: -100 },
+          { type: 'total' as const, amount: 1000 },
+        ],
+      },
+    },
+  ])(
+    '無効なレスポンス（型エラー: $name）ならバリデーションに失敗する',
+    ({ response }) => {
+      const result = responseSchema.safeParse(response);
+      expect(result.success).toBe(false);
+    },
+  );
 });
 
 describe('create_checkout ヘッダーの Zod バリデーション', () => {
@@ -139,11 +246,35 @@ describe('create_checkout ヘッダーの Zod バリデーション', () => {
     expect(result.success).toBe(false);
   });
 
-  test('Idempotency-Key が UUID 形式でないならバリデーションに失敗する', () => {
-    const result = headersSchema.safeParse({
-      ...validHeaders,
-      'Idempotency-Key': 'not-a-uuid',
-    });
-    expect(result.success).toBe(false);
-  });
+  test.each([
+    {
+      name: 'Idempotency-Key が UUID 形式でない',
+      headers: { ...validHeaders, 'Idempotency-Key': 'not-a-uuid' },
+    },
+    {
+      name: 'Request-Id が UUID 形式でない',
+      headers: { ...validHeaders, 'Request-Id': 'not-a-uuid' },
+    },
+    {
+      name: 'Idempotency-Key が空文字',
+      headers: { ...validHeaders, 'Idempotency-Key': '' },
+    },
+    {
+      name: 'Request-Signature が number（型違い）',
+      headers: { ...validHeaders, 'Request-Signature': 123 },
+    },
+    {
+      name: 'Idempotency-Key が number（型違い）',
+      headers: {
+        ...validHeaders,
+        'Idempotency-Key': 123,
+      },
+    },
+  ])(
+    '無効なヘッダー（型エラー: $name）ならバリデーションに失敗する',
+    ({ headers }) => {
+      const result = headersSchema.safeParse(headers);
+      expect(result.success).toBe(false);
+    },
+  );
 });
